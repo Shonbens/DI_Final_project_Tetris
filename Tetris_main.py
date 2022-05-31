@@ -1,6 +1,5 @@
 import pygame
 import random
-import time
 
 # creating the data structure for pieces
 # setting up global vars
@@ -147,12 +146,20 @@ class Piece(object):
         self.x = x
         self.y = y
         self.shape = shape
-        self.color = shape_colors[shapes.index(shape)]  #colors based on index
-        self.rotation = 0  #shape starts with 0 rotation
+        self.color = shape_colors[shapes.index(shape)]  # colors based on index
+        self.rotation = 0  # shape starts with 0 rotation, when key is pressed this is increased.
 
 
-def create_grid(locked_positions={}):
-    pass
+def grid(locked_positions={}):  # stores the taken positions with colors.
+    grid = [[(0, 0, 0) for x in range(10)] for x in range(20)]  # create one list for every row, base grid.
+
+    # If there is a shape a locked position, retrieve it and change the value in the grid.
+    for i in range(len(grid)):
+        for j in range(len(grid[i])):
+            if (j, i) in locked_positions:
+                c = locked_positions[(j, i)]
+                grid[i][j] = c
+    return grid
 
 
 def convert_shape_format(shape):
@@ -167,16 +174,29 @@ def check_lost(positions):
     pass
 
 
-def get_shape():
-    pass
+def get_shape():  # Grabs a random shape each time.
+    return random.choice(shapes)
 
 
 def draw_text_middle(text, size, color, surface):
     pass
 
 
-def draw_grid(surface, row, col):
-    pass
+def draw_grid(surface, grid):
+    surface.fill((0, 0, 0))
+
+    pygame.font.init()
+    font = pygame.font.SysFont('arial', 60)
+    label = font.render('PyTris', 1, (0, 255, 0))
+
+    surface.blit(label, (top_left_x + play_width / 2 - label.get_width() / 2), 30)
+
+    for i in range(len(grid)):
+        for j in range(len(grid[i])):
+            pygame.draw.rect(surface, grid[i][j],
+                             (top_left_x + j * 30, top_left_y + i * block_size, block_size, block_size), 0)
+
+    pygame.display.update()
 
 
 def clear_rows(grid, locked):
