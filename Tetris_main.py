@@ -124,7 +124,7 @@ shape_colors = [(0, 255, 0), (255, 0, 0), (0, 255, 255), (255, 255, 0), (255, 16
 # index 0 - 6 represent shape
 
 
-class Piece(object):  # *
+class Piece(object):
     def __init__(self, x, y, shape):
         self.x = x
         self.y = y
@@ -187,12 +187,14 @@ def get_shape():  # Grabs a random shape each time.
     return Piece(5, 0, random.choice(shapes))
 
 
-def draw_text_middle(surface, text, size, color):
-    font = pygame.font.SysFont("comicsans", size, bold=True)
+def draw_menu_text(surface, text, size, color):
+    # Text style
+    font = pygame.font.SysFont("Viking", size)
     label = font.render(text, 1, color)
 
+    # Location
     surface.blit(label, (
-    top_left_x + play_width / 2 - (label.get_width() / 2), top_left_y + play_height / 2 - label.get_height() / 2))
+        top_left_x + play_width / 2 - (label.get_width() / 2), top_left_y + play_height - 400 - label.get_height() / 2))
 
 
 def draw_grid(surface, grid):  # draws 20 vertical line and 10 horizontal forming a grid.
@@ -207,66 +209,93 @@ def draw_grid(surface, grid):  # draws 20 vertical line and 10 horizontal formin
 
 
 def clear_rows(grid, locked):
-    inc = 0
+    # if we remove a row, increment increases by 1
+    increment = 0
+    # loops through the grid backwards to not override existing rows in the dictionary.
     for i in range(len(grid) - 1, -1, -1):
         row = grid[i]
+        # If there are no black squares in a row, it means it is full so clear.
         if (0, 0, 0) not in row:
-            inc += 1
+            increment += 1  # checks how many rows where removed.
             ind = i
-            for j in range(len(row)):
+            for j in range(len(row)):  # gets every position in the full row.
                 try:
-                    del locked[(j, i)]
+                    del locked[(j, i)]  # delete locked positions from dictionary.
                 except:
                     continue
-
-    if inc > 0:
+    if increment > 0:  # sorts the locked pos list based on Y value.
         for key in sorted(list(locked), key=lambda x: x[1])[::-1]:
-            x, y = key
-            if y < ind:
-                newKey = (x, y + inc)
-                locked[newKey] = locked.pop(key)
+            x, y = key  # Gets every key in locked pos.
+            if y < ind:  # Checks if the y value is above the index that was removed. only moves down the above rows.
+                updated_key = (x, y + increment)  # Gets the new key and ads increment to move it down.
+                locked[updated_key] = locked.pop(key)  # moves the updated key to locked pos dictionary with same color.
 
-    return inc
+    return increment  # Returns the amount of deleted rows.
 
 
-def draw_next_shape(shape, surface):
-    font = pygame.font.SysFont('comicsans', 30)
-    label = font.render('Next', 1, (255, 255, 255))
+def next_shape(shape, surface):
+    # text font and color.
+    font = pygame.font.SysFont('Viking', 80)
+    label = font.render('Next', 1, (160, 32, 240))
 
+    # position in screen.
     sx = top_left_x + play_width - 500
-    sy = top_left_y + play_height / 2 - 150
-    format = shape.shape[shape.rotation % len(shape.shape)]
+    sy = top_left_y + play_height - 500
+    formatting = shape.shape[shape.rotation % len(shape.shape)]
 
-    for i, line in enumerate(format):
+    # draws the static image of the next shape
+    for i, line in enumerate(formatting):
         row = list(line)
         for j, column in enumerate(row):
-            if column == '0':
+            if column == '0':  # takes the upcoming shape based on its initial position and copies it.
                 pygame.draw.rect(surface, shape.color,
                                  (sx + j * block_size, sy + i * block_size, block_size, block_size), 0)
 
-    surface.blit(label, (sx + 10, sy - 30))
+    # draws the 'next' on the screen
+    surface.blit(label, (sx + 10, sy - 80))
 
 
-def draw_window(surface, grid, score=0, last_score=0):
-    surface.fill((0, 0, 0))
+def high_score(newscore):
+    score = highest_score()
+    # replaces score if higher tha high score.
+    with open('HighScores.txt', 'w') as f:
+        if int(score) > newscore:
+            f.write(str(score))
+        else:
+            f.write(str(newscore))
+
+
+def highest_score(): #display the high score
+    with open('HighScores.txt', 'r') as f:
+        lines = f.readlines()
+        score = lines[0].strip()
+
+    return score
+
+
+def draw_window(surface, grid, score=0, last_score = 0):
+    surface.fill((64, 64, 64))
 
     pygame.font.init()
-    font = pygame.font.SysFont('comicsans', 60)
+    font = pygame.font.SysFont('Viking', 70)
     label = font.render('PyTris', 1, (0, 255, 0))
 
     surface.blit(label, (top_left_x + play_width / 2 - (label.get_width() / 2), 30))
 
-    # current score
-    font = pygame.font.SysFont('comicsans', 30)
-    label = font.render('Score: ' + str(score), 1, (255, 255, 255))
+    # current score display
+    font = pygame.font.SysFont('Viking', 30)
+    label = font.render('High score: ' + str(score), 1, (255, 255, 255))
 
+    # position in screen
     sx = top_left_x + play_width + 50
     sy = top_left_y + play_height / 2 - 100
 
-    surface.blit(label, (sx + 20, sy + 160))
+    surface.blit(label, (sx + 30, sy + 100))
+    # high score
+    label = font.render('Score:' + str(last_score) , 1, (255, 255, 255))
 
     sx = top_left_x - 200
-    sy = top_left_y + 200
+    sy = top_left_y + 150
 
     surface.blit(label, (sx + 20, sy + 160))
 
@@ -278,10 +307,10 @@ def draw_window(surface, grid, score=0, last_score=0):
     pygame.draw.rect(surface, (255, 0, 0), (top_left_x, top_left_y, play_width, play_height), 5)
 
     draw_grid(surface, grid)
-    # pygame.display.update()
 
 
 def main(win):
+    last_score = highest_score()
     # Creates a grid with locked pos
     locked_positions = {}
     grid = create_grid(locked_positions)
@@ -294,20 +323,20 @@ def main(win):
     clock = pygame.time.Clock()
     fall_time = 0
     fall_speed = 0.30
-    level_time = 0
+    difficulty_time = 0
     score = 0
     # game loop
     while run:
         grid = create_grid(locked_positions)  # constantly updates grid with new locked positions.
         fall_time += clock.get_rawtime()  # gets the amount of time since the last clock tick. runs the same in all PC.
-        level_time += clock.get_rawtime()
+        difficulty_time += clock.get_rawtime()
         clock.tick()
+        # increases difficulty
+        if difficulty_time / 1000 > 5:
+            difficulty_time = 0
+            if difficulty_time > fall_speed:
+                difficulty_time -= fall_speed
         # makes piece fall
-        if level_time / 1000 > 5:
-            level_time = 0
-            if level_time > 0.12:
-                level_time -= 0.005
-
         if fall_time / 1000 > fall_speed:
             fall_time = 0
             current_piece.y += 1
@@ -345,41 +374,42 @@ def main(win):
             if y > -1:
                 grid[y][x] = current_piece.color
 
-        if change_piece: # updates locked positions dictionary with color and position.
+        if change_piece:  # updates locked positions dictionary with color and position.
             for pos in shape_pos:
                 p = (pos[0], pos[1])
                 locked_positions[p] = current_piece.color
             current_piece = next_piece
             next_piece = get_shape()  # changes current piece to the next one.
             change_piece = False  # gets a new random shape.
-            score += clear_rows(grid, locked_positions) * 10
+            score += clear_rows(grid, locked_positions) * 5  # increases score.
 
-        draw_window(win, grid, score, )
-        draw_next_shape(next_piece, win)
+        draw_window(win, grid, last_score, score)
+        next_shape(next_piece, win)
         pygame.display.update()
 
-        if check_lost(locked_positions): # if you loose break while loop.
-            draw_text_middle(win, "GAME OVER", 80, (0, 255, 0))
+        if check_lost(locked_positions):  # if you loose break while loop.
+            draw_menu_text(win, "GAME OVER", 180, (255, 0, 0))  # displays loosing text.
             pygame.display.update()
-            pygame.time.delay(1500)
-            run = False
+            pygame.time.delay(3000)
+            run = False  # Brings you back to main menu.
+            high_score(score)
 
 
-def main_menu(win):  # *
+def main_menu(win):  # Game menu
     run = True
     while run:
-        win.fill((0, 0, 0))
-        draw_text_middle(win, 'PRESS A KEY TO PLAY', 60, (0, 255, 0))
+        win.fill((64, 64, 64))
+        draw_menu_text(win, 'PRESS ANY KEY TO PLAY', 80, (0, 255, 0))
         pygame.display.update()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
-            if event.type == pygame.KEYDOWN:
+            if event.type == pygame.KEYDOWN:  # Whenever you press a key, game starts (you call main)
                 main(win)
 
     pygame.display.quit()
 
 
 win = pygame.display.set_mode((s_width, s_height))
-pygame.display.set_caption('Tetris')
+pygame.display.set_caption('PyTris')
 main_menu(win)
